@@ -9,6 +9,7 @@ In this project I will manage the code of the application using one of the most 
 ![feature-branch](https://user-images.githubusercontent.com/16802411/141663544-232951f1-2e2e-401c-bbf2-522e05c1a71b.png)
 
 
+
 # The workflow of the branch merge in the project after approval
 
 
@@ -16,6 +17,7 @@ In this project I will manage the code of the application using one of the most 
 ![Commits](https://user-images.githubusercontent.com/16802411/141663528-ed24f063-878b-4b05-a2bd-38ddef8cbf5d.PNG)
 
 # Approvals for staging and production environments
+## A pipeline is defined using a YAML file in your repo. Usually, this file is named azure-pipelines.yml and is located at the root of your repo.
 
 
 
