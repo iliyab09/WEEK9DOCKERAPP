@@ -1,7 +1,6 @@
-FROM node:lts-alpine
+FROM node:15-alpine
 WORKDIR /bootcamp-app
-COPY package.json /bootcamp-app/package.json
+COPY . .
 RUN npm install
-COPY . /bootcamp-app
-CMD ["npm", "run", "dev", "--host", "0.0.0.0"]
-EXPOSE 8081
+EXPOSE 8080
+CMD npm run initdb && npm run dev
