@@ -27,8 +27,9 @@ stages:
     displayName: Build
   
     steps:
+
     - task: Docker@2
-      displayName: Build an image to container registry
+      displayName: Build an image
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
@@ -36,7 +37,7 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
-#commentfeaterure
+
     - task: Docker@2
       displayName: Push an image to azure container registry
       condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
@@ -47,7 +48,11 @@ stages:
         tags: $(tag)
 
 # Continuous Deployment Process for Staging Environment
+
+
 - stage: DeployToStaging
+  variables:
+  - group: Staging
   condition: and(succeeded(), eq(variables['build.sourceBranch'], 'refs/heads/master'))
   jobs:
   - deployment: Staging
@@ -59,41 +64,28 @@ stages:
       runOnce:
         deploy:
           steps:
-            - task: Bash@3
-              inputs:
-                targetType: 'inline'
-                script: |
-                  # Write your commands here
-                  
-                  sudo apt  install docker.io
-                  sudo chmod 666 /var/run/docker.sock
-            - task: Bash@3
+          
+            - task: CmdLine@2
               displayName: Stop Current Container
               inputs:
-                targetType: 'inline'
-                script: 'docker rm -f  containerBootCamp || true'
+                script: 'docker rm -f  $(imageRepository) || true'
             - task: Docker@2
               displayName: 'Login to ACR'
               inputs:
                 containerRegistry: $(dockerRegistryServiceConnection)
                 command: 'login'
-            
-            - task: Bash@3
-              displayName: Pull image From ACR
-              inputs:
-                targetType: 'inline'
-                script: 'docker pull $(containerRegistry)/$(imageRepository):$(tag)'
-                
-              
-            - task: Bash@3
+            - task: CmdLine@2
               displayName: Put ENVs
               inputs:
-                targetType: 'inline'
-                script: 'docker run -d --restart=always --name containerBootCamp -p 8080:8080 -e PGHOST=$(PGHOST_stage) -e PORT=8080 -e HOST=0.0.0.0 -e PGUSERNAME=$(PGUSER_stage) -e PGDATABASE=postgres -e PGPASSWORD=$(PGPASSWORD) -e PGPORT=5432 -e HOST_URL=$(HOST_URL_stage) -e COOKIE_ENCRYPT_PWD=$(COOKIE_ENCRYPT_PWD) -e NODE_ENV=development -e OKTA_ORG_URL=$(OKTA_ORG_URL) -e OKTA_CLIENT_ID=$(OKTA_CLIENT_ID) -e OKTA_CLIENT_SECRET=$(OKTA_CLIENT_SECRET) $(containerRegistry)/$(imageRepository):$(tag)'
+                script: 'docker run --restart=always -d --name $(imageRepository) -p 8080:8080 -e PGHOST=$(PGHOSTNAME) -e PORT=$(PORT) -e  HOST=$(HOST) -e PGUSERNAME=$(PGUSER) -e PGDATABASE=$(PGDBNAME) -e  PGPASSWORD=$(PGPASSWORD) -e  PGPORT=5432 -e COOKIE_ENCRYPT_PWD=$(COOKIE_PASS) -e  OKTA_ORG_URL=$(OKTA_URL) -e  OKTA_CLIENT_ID=$(OKTA_CLIENT_ID) -e OKTA_CLIENT_SECRET=$(OKTA_SECRET) $(containerRegistry)/$(imageRepository):$(tag)'
 
 
 # Continuous Delivery Process for Production Environment
+
+
 - stage: DeployToProduction
+  variables:
+  - group: Staging
   condition: and(succeeded(), eq(variables['build.sourceBranch'], 'refs/heads/master'))
   jobs:
   - deployment: Production
@@ -105,33 +97,18 @@ stages:
       runOnce:
         deploy:
           steps:
-            - task: Bash@3
-              inputs:
-                targetType: 'inline'
-                script: |
-                  # Write your commands here
-                  
-                  sudo apt  install docker.io
-                  sudo chmod 666 /var/run/docker.sock
-            - task: Bash@3
+
+            - task: CmdLine@2
               displayName: Stop Current Container
               inputs:
-                targetType: 'inline'
-                script: 'docker rm -f  containerBootCamp || true'
+                script: 'docker rm -f  $(imageRepository) || true'
             - task: Docker@2
               displayName: 'Login to ACR'
               inputs:
                 containerRegistry: $(dockerRegistryServiceConnection)
                 command: 'login'
-            
-            - task: Bash@3
-              displayName: Pull image From ACR
+
+            - task: CmdLine@2
+              displayName: Put ENVs
               inputs:
-                targetType: 'inline'
-                script: 'docker pull $(containerRegistry)/$(imageRepository):$(tag)'
-              
-            - task: Bash@3
-              displayName: Enter ENVs
-              inputs:
-                targetType: 'inline'
-                script: 'docker run -d --restart=always --name containerBootCamp -p 8080:8080 -e PGHOST=$(PGHOST_prod) -e PORT=8080 -e  HOST=0.0.0.0 -e PGUSERNAME=$(PGUSER_prod) -e PGDATABASE=postgres -e PGPASSWORD=$(PGPASSWORD) -e PGPORT=5432 -e HOST_URL=$(HOST_URL_prod) -e COOKIE_ENCRYPT_PWD=$(COOKIE_ENCRYPT_PWD) -e NODE_ENV=development -e OKTA_ORG_URL=$(OKTA_ORG_URL) -e OKTA_CLIENT_ID=$(OKTA_CLIENT_ID) -e OKTA_CLIENT_SECRET=$(OKTA_CLIENT_SECRET) $(containerRegistry)/$(imageRepository):$(tag)'
+                script: 'docker run --restart=always -d --name $(imageRepository) -p 8080:8080 -e PGHOST=$(PGHOSTNAME) -e PORT=$(PORT) -e  HOST=$(HOST) -e PGUSERNAME=$(PGUSER) -e PGDATABASE=$(PGDBNAME) -e  PGPASSWORD=$(PGPASSWORD) -e  PGPORT=5432 -e COOKIE_ENCRYPT_PWD=$(COOKIE_PASS) -e  OKTA_ORG_URL=$(OKTA_URL) -e  OKTA_CLIENT_ID=$(OKTA_CLIENT_ID) -e OKTA_CLIENT_SECRET=$(OKTA_SECRET) $(containerRegistry)/$(imageRepository):$(tag)'
